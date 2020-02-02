@@ -843,20 +843,6 @@ size_t answer_auth(struct dns_header *header, char *limit, size_t qlen, time_t n
 }
   
 
-/* The subnet for which we are authoritative, given a cache record, or NULL if not authoritative */
-static struct addrlist *auth_subnet_for_crec(struct crec *crecp) {
-   struct auth_zone *search_zone;
-   struct addrlist *subnet;
-   
-   for ( search_zone = daemon->auth_zones; search_zone; search_zone = search_zone->next ) {
-      if ( (subnet = find_subnet(search_zone, crecp->flags, &crecp->addr)) ) {
-	 return subnet;
-      }
-   }
-   return NULL;
-}
-
-
 static int belongs_to_zone(struct auth_zone *zone, struct crec *crecp, int local_query, char **cutp) {
    if ( (crecp->flags & F_DHCP) && !option_bool(OPT_DHCP_FQDN) && strchr(cache_get_name(crecp), '.') ) {
      return 0;
