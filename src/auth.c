@@ -19,7 +19,7 @@
 #ifdef HAVE_AUTH
 
 static int add_resource_record_if_auth(struct dns_header *header, char *limit, int *truncp, int nameoffset, unsigned char **pp, 
-				       struct auth_zone *zone, struct crec *crecp, int local_query, char **cutp);
+				       struct auth_zone *zone, struct crec *crecp, int local_query, char *cut);
 
 static struct addrlist *find_addrlist(struct addrlist *list, int flag, union all_addr *addr_u)
 {
@@ -785,7 +785,7 @@ size_t answer_auth(struct dns_header *header, char *limit, size_t qlen, time_t n
 	      if ((crecp->flags & (F_IPV4 | F_IPV6)) &&
 		  !(crecp->flags & (F_NEG | F_NXDOMAIN)) &&
 		  (crecp->flags & F_FORWARD))
-		 anscount += add_resource_record_if_auth(header, limit, &trunc, -axfroffset, &ansp, zone, crecp, local_query, &cut);
+		 anscount += add_resource_record_if_auth(header, limit, &trunc, -axfroffset, &ansp, zone, crecp, local_query, cut);
 	    }
 	   
 	  /* repeat SOA as last record */
@@ -843,6 +843,8 @@ size_t answer_auth(struct dns_header *header, char *limit, size_t qlen, time_t n
 }
   
 
+/* cutp is value-return parameter: *cutp will point to the first '.' dividing rr name from rest of
+   fqdn of cache_get_name(crecp), if present */
 static int belongs_to_zone(struct auth_zone *zone, struct crec *crecp, int local_query, char **cutp) {
    if ( (crecp->flags & F_DHCP) && !option_bool(OPT_DHCP_FQDN) && strchr(cache_get_name(crecp), '.') ) {
      return 0;
@@ -860,10 +862,10 @@ static int belongs_to_zone(struct auth_zone *zone, struct crec *crecp, int local
 
 
 static int add_resource_record_if_auth(struct dns_header *header, char *limit, int *truncp, int nameoffset, unsigned char **pp, 
-				       struct auth_zone *zone, struct crec *crecp, int local_query, char **cutp) {
+				       struct auth_zone *zone, struct crec *crecp, int local_query, char *cut) {
    const char *name = cache_get_name(crecp);
    
-   if ( !belongs_to_zone(zone, crecp, local_query, cutp) ) {
+   if ( !belongs_to_zone(zone, crecp, local_query, &cut) ) {
       return 0;
    }
    
@@ -902,13 +904,19 @@ static int add_resource_record_if_auth(struct dns_header *header, char *limit, i
 				 name);
    }
    else {
-      return add_resource_record(header, limit, truncp, nameoffset, pp,
+     if ( cut ) {
+       *cut = 0;
+     }
+     return add_resource_record(header, limit, truncp, nameoffset, pp,
 				 daemon->auth_ttl, NULL, 
 				 (crecp->flags & F_IPV6) ? T_AAAA : T_A,
 				 C_IN, 
 				 (crecp->flags & F_IPV4) ? "4" : "6", 
-				 cutp ? name : NULL, 
+				 cut ? name : NULL, 
 				 &crecp->addr);
+     if ( cut ) {
+       *cut = '.';
+     }
    }
 }
 
