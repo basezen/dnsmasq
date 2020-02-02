@@ -885,7 +885,12 @@ static int add_resource_record_if_auth(struct dns_header *header, char *limit, i
       /* Walk backwards; lowest host bits are at end of array. */
       for ( rr_ptr_name[0] = '\0', addr_byte_offset = start_offset; addr_byte_offset >= end_offset; addr_byte_offset-- ) {
 	 char segment[5];
-	 sprintf(segment, "%hhu.", addr_bytes[addr_byte_offset]);
+	 if ( zone->zone_flags & F_IPV4 ) {
+	   sprintf(segment, "%hhu.", addr_bytes[addr_byte_offset]);
+	 }
+	 else {
+	   sprintf(segment, "%x.%x.", addr_bytes[addr_byte_offset] & 0x0F, (addr_bytes[addr_byte_offset] & 0xF0) >> 4);
+	 }
 	 strcat(rr_ptr_name, segment);
       }
       return add_resource_record(header, limit, truncp, nameoffset, pp,
