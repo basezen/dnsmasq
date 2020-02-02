@@ -389,6 +389,7 @@ struct addrlist {
 
 struct auth_zone {
   char *domain;
+  int zone_flags; // Track reverse IPv6 (ip6.arpa), reverse IPv4 (in-addr.arpa) or forward (non-PTR records)
   struct auth_name_list {
     char *name;
     int flags;
@@ -396,6 +397,7 @@ struct auth_zone {
   } *interface_names;
   struct addrlist *subnet;
   struct addrlist *exclude;
+  struct addrlist *reverse_binary; // If reverse, store in binary form '168.192.in-addr.arpa' -> 192.168.0.0/24
   struct auth_zone *next;
 };
 
@@ -1220,7 +1222,7 @@ int private_net(struct in_addr addr, int ban_localhost);
 size_t answer_auth(struct dns_header *header, char *limit, size_t qlen, 
 		   time_t now, union mysockaddr *peer_addr, int local_query,
 		   int do_bit, int have_pseudoheader);
-int in_zone(struct auth_zone *zone, char *name, char **cut);
+int fqdn_in_domain(struct auth_zone *zone, char *name, char **cut);
 #endif
 
 /* dnssec.c */
@@ -1278,6 +1280,7 @@ int read_write(int fd, unsigned char *packet, int size, int rw);
 
 int wildcard_match(const char* wildcard, const char* match);
 int wildcard_matchn(const char* wildcard, const char* match, int num);
+int zone_flags(char *zone_name);
 
 /* log.c */
 void die(char *message, char *arg1, int exit_code) ATTRIBUTE_NORETURN;

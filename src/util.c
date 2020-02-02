@@ -741,3 +741,26 @@ int wildcard_matchn(const char* wildcard, const char* match, int num)
 
   return (!num) || (*wildcard == *match);
 }
+
+
+/*
+  Track if the zone is a reverse (RR=PTR) zone, and if so, whether it's for IPv4 or v6. Forward
+  zones can always have both types.
+*/
+int zone_flags(char *zone_name) {
+   static const char *ip4_ptr_suffix = ".in-addr.arpa";
+   static const char *ip6_ptr_suffix = ".ip6.arpa";
+   
+   const char *check_ip4_suffix = zone_name + strlen(zone_name) - strlen(ip4_ptr_suffix);
+   const char *check_ip6_suffix = zone_name + strlen(zone_name) - strlen(ip6_ptr_suffix);
+   
+   if ( strlen(zone_name) > strlen(ip4_ptr_suffix) && strcmp(check_ip4_suffix, ip4_ptr_suffix) == 0 ) {
+      return F_REVERSE | F_IPV4;
+   }
+   else if ( strlen(zone_name) > strlen(ip6_ptr_suffix) && strcmp(check_ip6_suffix, ip6_ptr_suffix) == 0 ) {
+      return F_REVERSE | F_IPV6;
+   }
+   else {
+      return F_FORWARD | F_IPV4 | F_IPV6;
+   }
+}

@@ -1607,6 +1607,67 @@ static void server_list_free(struct server *list)
     }
 }
 
+
+/* The number of segments of a domain name. foo.co.uk => 3; foo.co.uk => 3 */
+static int num_segments(char *name) {
+   char *c = name;
+   int count = 1;
+   while ( *c++ ) {
+      if ( *c == '.' && *(c + 1) != '\0' ) {
+	 count++;
+      }
+   }
+   return count;
+}
+
+
+/* 
+   Construct a subnet in binary form corresponding to a PTR domain.
+   e.g. "2.4.in-addr.arpa" -> { addr: 4.2.0.0; flags: IPv4; prefixlen: 16 }
+   Returns newly allocated memory
+ */
+static struct addrlist *subnet_from_ptr_domain(struct auth_zone *zone) {
+   struct addrlist *reverse_zone_subnet = opt_malloc(sizeof (struct addrlist));
+   
+   static char prototype_ptr_name[256];
+   int total_segments;
+   int zone_segments;
+
+   if ( zone->domain ) {
+     zone_segments = num_segments(zone->domain) - 2;
+   }
+   else {
+     my_syslog(LOG_ERR, _("Invalid zone with NULL domain"));
+     return NULL;
+   }
+   
+   if ( zone->zone_flags & F_IPV4 ) {
+     total_segments = 4;
+   }
+   else if ( zone->zone_flags & F_IPV6 ) {
+     total_segments = 32;
+   }
+   else {
+     my_syslog(LOG_ERR, _("Invalid zone flags, neither IPv4 or IPv6 was set for %s"), zone->domain);
+     return NULL;
+   }
+
+   int seg_ctr;
+   for ( prototype_ptr_name[0] = '\0', seg_ctr = zone_segments; seg_ctr < total_segments; seg_ctr++ ) {
+      strcat(prototype_ptr_name, "0.");
+   }
+   strcat(prototype_ptr_name, zone->domain);
+
+   in_arpa_name_2_addr(prototype_ptr_name, &reverse_zone_subnet->addr);
+   reverse_zone_subnet->flags = (zone->zone_flags & F_IPV6) ? ADDRLIST_IPV6 : 0;
+   /* segments in IPv6 are quartets; in IPv4, octets */
+   reverse_zone_subnet->prefixlen = zone_segments * ((reverse_zone_subnet->flags & ADDRLIST_IPV6) ? 4 : 8);
+   reverse_zone_subnet->next = NULL;
+
+   return reverse_zone_subnet;
+}
+
+
 static int one_opt(int option, char *arg, char *errstr, char *gen_err, int command_line, int servers_only)
 {      
   int i;
@@ -2076,11 +2137,13 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
 	new = opt_malloc(sizeof(struct auth_zone));
 	new->domain = opt_string_alloc(arg);
 	new->subnet = NULL;
+	new->zone_flags = zone_flags(new->domain);
+	new->reverse_binary = (new->zone_flags & F_REVERSE) ? subnet_from_ptr_domain(new) : NULL;
 	new->exclude = NULL;
 	new->interface_names = NULL;
 	new->next = daemon->auth_zones;
 	daemon->auth_zones = new;
-
+	  
 	while ((arg = comma))
 	  {
 	    int prefixlen = 0;
