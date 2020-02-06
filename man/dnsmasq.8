@@ -2296,9 +2296,8 @@ where we allow 1.2.3.0/24 addresses.
  3.2.1.in-addr.arpa  NS    our.zone.com
 .fi
 
-Note that at present, reverse (in-addr.arpa and ip6.arpa) zones are
-not available in zone transfers, so there is no point arranging
-secondary servers for reverse lookups.
+Reverse (in-addr.arpa and ip6.arpa) zones are also available for zone
+transfers, which was not available in version 2.80 and earlier.
 
 .PP
 When dnsmasq is configured to act as an authoritative server, the
