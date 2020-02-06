@@ -7,6 +7,7 @@ src/.copts_*
 contrib/lease-tools/dhcp_lease_time
 contrib/lease-tools/dhcp_release
 contrib/lease-tools/dhcp_release6
+contrib/ptrzone-xfer/output/
 debian/files
 debian/substvars
 debian/utils-substvars
