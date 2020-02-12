@@ -143,7 +143,12 @@ int extract_name(struct dns_header *header, size_t plen, unsigned char **pp,
  
 /* Max size of input string (for IPv6) is 75 chars.) */
 #define MAXARPANAME 75
-int in_arpa_name_2_addr(char *namein, union all_addr *addrp)
+/* 
+   an "incomplete" PTR name is a PTR zone. Optionally return corresponding network width. Complete
+   name returns full address width.  
+   2.1.in-addr.arpa represents 16-bit subnet; f.e.d.c.b.a.ip6.arpa represents 104-bit subnet
+ */
+int in_arpa_name_2_addr(char *namein, union all_addr *addrp, int *prefix_width)
 {
   int j;
   char name[MAXARPANAME+1], *cp1;
@@ -154,6 +159,8 @@ int in_arpa_name_2_addr(char *namein, union all_addr *addrp)
     return 0;
 
   memset(addrp, 0, sizeof(union all_addr));
+  if (prefix_width)
+     *prefix_width = 0;
 
   /* turn name into a series of asciiz strings */
   /* j counts no. of labels */
@@ -194,6 +201,8 @@ int in_arpa_name_2_addr(char *namein, union all_addr *addrp)
 	  addr[2] = addr[1];
 	  addr[1] = addr[0];
 	  addr[0] = atoi(cp1);
+	  if (prefix_width)
+	     *prefix_width += 8;
 	}
 
       return F_IPV4;
@@ -222,6 +231,8 @@ int in_arpa_name_2_addr(char *namein, union all_addr *addrp)
 		addr[j/2] |= strtol(xdig, NULL, 16);
 	      else
 		addr[j/2] = strtol(xdig, NULL, 16) << 4;
+	      if (prefix_width)
+		 *prefix_width += 4;
 	    }
 	  
 	  if (*cp1 == '/' && j == 32)
@@ -237,6 +248,8 @@ int in_arpa_name_2_addr(char *namein, union all_addr *addrp)
 	      for (j = sizeof(struct in6_addr)-1; j>0; j--)
 		addr[j] = (addr[j] >> 4) | (addr[j-1] << 4);
 	      addr[0] = (addr[0] >> 4) | (strtol(cp1, NULL, 16) << 4);
+	      if (prefix_width)
+		 *prefix_width += 4;
 	    }
 	  
 	  return F_IPV6;
@@ -641,7 +654,7 @@ int extract_addresses(struct dns_header *header, size_t qlen, char *name, time_t
 	 represent them in the cache. */
       if (qtype == T_PTR)
 	{ 
-	  int name_encoding = in_arpa_name_2_addr(name, &addr);
+	  int name_encoding = in_arpa_name_2_addr(name, &addr, NULL);
 	  
 	  if (!name_encoding)
 	    continue;
@@ -1470,7 +1483,7 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
 	  if (qtype == T_PTR || qtype == T_ANY)
 	    {
 	      /* see if it's w.z.y.z.in-addr.arpa format */
-	      int is_arpa = in_arpa_name_2_addr(name, &addr);
+	      int is_arpa = in_arpa_name_2_addr(name, &addr, NULL);
 	      struct ptr_record *ptr;
 	      struct interface_name* intr = NULL;
 

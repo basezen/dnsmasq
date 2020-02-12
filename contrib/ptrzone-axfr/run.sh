@@ -35,10 +35,10 @@ make -C ${top}
 
 mkdir ./output
 
-${top}/src/dnsmasq --no-daemon --log-queries --port ${port} --conf-file=${top}/test/dnsmasq.conf > output/run.${start} 2>&1 &
+${top}/src/dnsmasq --no-daemon --log-queries --port ${port} --conf-file=./dnsmasq.conf > ./output/server-out.${start} 2>&1 &
 
 exec 3>&1
-exec 1>results.${start}
+exec 1>output/client-out.${start}
 echo "** Reverse IPv6 zone transfer **"
 dig -t AXFR -q 0.0.0.0.2.1.0.0.d.c.b.a.8.b.d.0.1.0.0.2.ip6.arpa -p ${port} @localhost
 echo "** Reverse IPv4 zone transfer **"

@@ -1214,7 +1214,7 @@ size_t resize_packet(struct dns_header *header, size_t plen,
 int add_resource_record(struct dns_header *header, char *limit, int *truncp,
 			int nameoffset, unsigned char **pp, unsigned long ttl, 
 			int *offset, unsigned short type, unsigned short class, char *format, ...);
-int in_arpa_name_2_addr(char *namein, union all_addr *addrp);
+int in_arpa_name_2_addr(char *namein, union all_addr *addrp, int *prefix_width);
 int private_net(struct in_addr addr, int ban_localhost);
 
 /* auth.c */
@@ -1222,7 +1222,7 @@ int private_net(struct in_addr addr, int ban_localhost);
 size_t answer_auth(struct dns_header *header, char *limit, size_t qlen, 
 		   time_t now, union mysockaddr *peer_addr, int local_query,
 		   int do_bit, int have_pseudoheader);
-int fqdn_in_domain(struct auth_zone *zone, char *name, char **cut);
+int in_zone(struct auth_zone *zone, char *name, char **cut);
 #endif
 
 /* dnssec.c */
@@ -1280,7 +1280,6 @@ int read_write(int fd, unsigned char *packet, int size, int rw);
 
 int wildcard_match(const char* wildcard, const char* match);
 int wildcard_matchn(const char* wildcard, const char* match, int num);
-int zone_flags(char *zone_name);
 
 /* log.c */
 void die(char *message, char *arg1, int exit_code) ATTRIBUTE_NORETURN;
