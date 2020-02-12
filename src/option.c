@@ -1612,6 +1612,7 @@ static void server_list_free(struct server *list)
    Construct a subnet in binary form corresponding to ptr_domain_name, if it is a valid one.
    Example: "2.4.in-addr.arpa" -> { addr: 4.2.0.0; flags: IPv4; prefixlen: 16 }
    Returns newly allocated single-element addr_list on success, NULL on failure
+   opt_flags: optional value-return parameter: flags F_REVERSE and F_IPV[46] for valid reverse domain, no change otherwise
  */
 static struct addrlist *subnet_from_ptr_domain(char *ptr_domain_name, int *opt_flags)
 {
@@ -1619,17 +1620,19 @@ static struct addrlist *subnet_from_ptr_domain(char *ptr_domain_name, int *opt_f
    int prefixlen;
    int flag_ipvers = in_arpa_name_2_addr(ptr_domain_name, &addr, &prefixlen);
    
-   if (flag_ipvers) {
-      struct addrlist *reverse_zone_subnet = opt_malloc(sizeof (struct addrlist));
-      reverse_zone_subnet->addr = addr;
-      reverse_zone_subnet->prefixlen = prefixlen;
-      reverse_zone_subnet->flags = (flag_ipvers & F_IPV6) ? ADDRLIST_IPV6 : 0;
-      reverse_zone_subnet->next = NULL;
-      return reverse_zone_subnet;
-   }
-   else {
-      return NULL;
-   }
+   if (flag_ipvers)
+     {
+       struct addrlist *reverse_zone_subnet = opt_malloc(sizeof (struct addrlist));
+       reverse_zone_subnet->addr = addr;
+       reverse_zone_subnet->prefixlen = prefixlen;
+       reverse_zone_subnet->flags = (flag_ipvers & F_IPV6) ? ADDRLIST_IPV6 : 0;
+       reverse_zone_subnet->next = NULL;
+       if ( opt_flags )
+	 *opt_flags = flag_ipvers;
+       return reverse_zone_subnet;
+     }
+   else
+     return NULL;
 }
 
 
@@ -2096,13 +2099,17 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
     case LOPT_AUTHZONE: /* --auth-zone */
       {
 	struct auth_zone *new;
+	int flag_ipvers;
 	
 	comma = split(arg);
 		
 	new = opt_malloc(sizeof(struct auth_zone));
 	new->domain = opt_string_alloc(arg);
 	new->subnet = NULL;
-	new->reverse_binary = subnet_from_ptr_domain(new->domain, &new->zone_flags);
+	if ( (new->reverse_binary = subnet_from_ptr_domain(new->domain, &flag_ipvers)) )
+	  new->zone_flags = F_REVERSE | flag_ipvers;
+	else
+	  new->zone_flags = F_FORWARD;
 	new->exclude = NULL;
 	new->interface_names = NULL;
 	new->next = daemon->auth_zones;
