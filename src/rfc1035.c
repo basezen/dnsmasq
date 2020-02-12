@@ -144,9 +144,9 @@ int extract_name(struct dns_header *header, size_t plen, unsigned char **pp,
 /* Max size of input string (for IPv6) is 75 chars.) */
 #define MAXARPANAME 75
 /* 
-   an "incomplete" PTR name is a PTR zone. Optionally return corresponding network width. Complete
+   An "incomplete" PTR name may be a PTR zone. Optionally return corresponding prefix width. Complete
    name returns full address width.  
-   2.1.in-addr.arpa represents 16-bit subnet; f.e.d.c.b.a.ip6.arpa represents 104-bit subnet
+   2.1.in-addr.arpa represents 16-bit prefix; f.e.d.c.b.a.ip6.arpa represents 24-bit prefix
  */
 int in_arpa_name_2_addr(char *namein, union all_addr *addrp, int *prefix_width)
 {
