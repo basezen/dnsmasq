@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Quick-and-dirty test harness for IPv6/v4 PTR zone tranfer feature
+# Quick-and-dirty test harness for IPv6/v4 PTR zone transfer feature
 # Author: Daniel Bromberg daniel@basezen.com
 
 # Copyright 2020 Daniel Bromberg
