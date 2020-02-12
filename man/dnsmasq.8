@@ -2297,7 +2297,11 @@ where we allow 1.2.3.0/24 addresses.
 .fi
 
 Reverse (in-addr.arpa and ip6.arpa) zones are also available for zone
-transfers, which was not available in version 2.80 and earlier.
+transfers, which was not available in version 2.81 and
+earlier. However such transfers are only enabled when the reverse zone
+is explicitly specified with
+.B --auth-zone
+(none of the qualifiers accepted for forward zones can be used).
 
 .PP
 When dnsmasq is configured to act as an authoritative server, the
